@@ -2297,7 +2297,7 @@ async function initSession() {
     startedAt: serverTimestamp()
   });
   renderPhase(0);
-  if (isFacilitatore) syncTimer(timerEnd, dur, false, null);
+  // Il timer verrà avviato dal listener onValue quando i dati saranno pronti
 }
 
 const PHASE_DUR = [300,720,480,300];
