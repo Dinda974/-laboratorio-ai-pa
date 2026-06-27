@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio · Supervisione Umana e AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blu: #1B3A6B;
+    --blu-chiaro: #2A5298;
+    --avorio: #F8F6F1;
+    --ambra: #C97D2E;
+    --ambra-chiaro: #F5A623;
+    --verde: #2D6A4F;
+    --rosso: #C0392B;
+    --grigio: #6B7280;
+    --grigio-chiaro: #E8E4DC;
+    --bianco: #FFFFFF;
+    --ombra: 0 4px 24px rgba(27,58,107,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--avorio);
+    color: var(--blu);
+    min-height: 100vh;
+  }
+
+  /* ── SCHERMO LOGIN / SELEZIONE RUOLO ── */
+  #screen-join {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--blu);
+  }
+
+  .join-logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--ambra);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+
+  .join-title {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 700;
+    color: var(--avorio);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 600px;
+    margin-bottom: 0.5rem;
+  }
+
+  .join-subtitle {
+    font-size: 1rem;
+    color: rgba(248,246,241,0.6);
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  .join-card {
+    background: var(--avorio);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .join-card h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--grigio);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+  }
+
+  .role-btn {
+    display: block;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    border: 2px solid var(--grigio-chiaro);
+    border-radius: 10px;
+    background: var(--bianco);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .role-btn:hover { border-color: var(--blu-chiaro); background: rgba(27,58,107,0.04); }
+  .role-btn.selected { border-color: var(--ambra); background: rgba(201,125,46,0.06); }
+
+  .role-btn .role-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--blu);
+    display: block;
+  }
+
+  .role-btn .role-desc {
+    font-size: 0.8rem;
+    color: var(--grigio);
+    margin-top: 0.2rem;
+  }
+
+  .facilitatore-badge {
+    background: var(--ambra);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .join-btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--blu);
+    color: var(--avorio);
+    border: none;
+    border-radius: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: background 0.2s;
+  }
+  .join-btn:hover { background: var(--blu-chiaro); }
+  .join-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── LAYOUT PRINCIPALE ── */
+  #screen-main { display: none; min-height: 100vh; flex-direction: column; }
+
+  header {
+    background: var(--blu);
+    color: var(--avorio);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 1rem; }
+
+  .phase-indicator {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--ambra);
+    text-transform: uppercase;
+  }
+
+  .phase-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--avorio);
+  }
+
+  /* ── TIMER CIRCOLARE ── */
+  .timer-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .timer-svg-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+
+  .timer-svg-wrap svg {
+    transform: rotate(-90deg);
+  }
+
+  .timer-track { fill: none; stroke: rgba(248,246,241,0.15); stroke-width: 4; }
+  .timer-fill { fill: none; stroke: var(--ambra); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .timer-fill.urgent { stroke: var(--rosso); animation: pulse-ring 1s ease-in-out infinite; }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .timer-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--avorio);
+  }
+
+  .timer-controls { display: flex; gap: 0.4rem; }
+  .timer-ctrl-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--avorio);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .timer-ctrl-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* ── CANGURO BUTTON ── */
+  .kangaro-btn {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.3);
+    color: var(--avorio);
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .kangaro-btn:hover { background: rgba(255,100,50,0.3); border-color: var(--ambra-chiaro); }
+  .kangaro-btn.sent { background: var(--rosso); border-color: var(--rosso); animation: bounce 0.4s ease; }
+
+  @keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+
+  /* ── BARRA FASI ── */
+  .phases-bar {
+    background: var(--bianco);
+    border-bottom: 1px solid var(--grigio-chiaro);
+    padding: 0 1.5rem;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .phases-bar::-webkit-scrollbar { display: none; }
+
+  .phase-tab {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--grigio);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .phase-tab:hover { color: var(--blu); }
+  .phase-tab.active { color: var(--blu); border-bottom-color: var(--ambra); font-weight: 600; }
+  .phase-tab.done { color: var(--verde); }
+  .phase-tab .tab-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--grigio);
+    display: block;
+  }
+
+  /* ── CONTENUTO PRINCIPALE ── */
+  main {
+    flex: 1;
+    padding: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .section-card {
+    background: var(--bianco);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--ombra);
+    border-left: 4px solid var(--blu);
+  }
+
+  .section-card.ambra { border-left-color: var(--ambra); }
+  .section-card.verde { border-left-color: var(--verde); }
+  .section-card.rosso { border-left-color: var(--rosso); }
+
+  .card-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--grigio);
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--blu);
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .card-body {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #374151;
+  }
+
+  .highlight-box {
+    background: rgba(201,125,46,0.08);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(201,125,46,0.2);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .highlight-box strong { color: var(--ambra); }
+
+  /* ── PERSONAGGI ── */
+  .persona-card {
+    background: var(--bianco);
+    border-radius: 14px;
+    padding: 1.75rem;
+    box-shadow: var(--ombra);
+  }
+
+  .persona-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+  .badge-operatore { background: rgba(27,58,107,0.1); color: var(--blu); }
+  .badge-it { background: rgba(45,106,79,0.1); color: var(--verde); }
+  .badge-dg { background: rgba(201,125,46,0.1); color: var(--ambra); }
+
+  .persona-role { font-size: 1.2rem; font-weight: 700; color: var(--blu); margin-bottom: 0.25rem; }
+  .persona-focus { font-size: 0.85rem; color: var(--grigio); margin-bottom: 1.25rem; }
+
+  .persona-section { margin-bottom: 1rem; }
+  .persona-section h4 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--grigio);
+    margin-bottom: 0.4rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .persona-section p { font-size: 0.875rem; line-height: 1.6; color: #374151; }
+
+  .prompt-list { list-style: none; }
+  .prompt-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--grigio-chiaro);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #374151;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .prompt-list li:last-child { border-bottom: none; }
+  .prompt-list li::before { content: "→"; color: var(--ambra); font-weight: 700; flex-shrink: 0; }
+
+  /* ── POLLING ── */
+  .poll-question {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--blu);
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+  }
+
+  .poll-options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .poll-option {
+    position: relative;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--grigio-chiaro);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bianco);
+    overflow: hidden;
+  }
+  .poll-option:hover:not(.voted) { border-color: var(--blu-chiaro); }
+  .poll-option.selected { border-color: var(--ambra); }
+  .poll-option.voted { cursor: default; }
+
+  .poll-bar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: rgba(201,125,46,0.12);
+    border-radius: 8px;
+    transition: width 0.6s ease;
+    z-index: 0;
+  }
+
+  .poll-option-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .poll-label { font-size: 0.875rem; font-weight: 500; }
+  .poll-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ambra);
+    min-width: 36px;
+    text-align: right;
+  }
+  .poll-count { font-size: 0.7rem; color: var(--grigio); }
+
+  /* ── CANGURO ALERTS ── */
+  .canguro-alerts {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 280px;
+  }
+
+  .canguro-alert {
+    background: var(--rosso);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.4);
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ── DEBRIEFING ── */
+  .w3-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .w3-card {
+    background: var(--bianco);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: var(--ombra);
+  }
+
+  .w3-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .w3-what { color: var(--blu); }
+  .w3-sowhat { color: var(--ambra); }
+  .w3-nowwhat { color: var(--verde); }
+
+  .w3-question {
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  /* ── PANNELLO FACILITATORE ── */
+  .facilitator-panel {
+    background: rgba(27,58,107,0.04);
+    border: 1px solid rgba(27,58,107,0.12);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .facilitator-panel h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--grigio);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 1rem;
+  }
+
+  .phase-nav-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+  .nav-btn {
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    border: 2px solid var(--blu);
+    background: transparent;
+    color: var(--blu);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: var(--blu); color: var(--avorio); }
+  .nav-btn.primary { background: var(--blu); color: var(--avorio); }
+  .nav-btn.primary:hover { background: var(--blu-chiaro); }
+
+  .kanguro-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--rosso);
+    color: white;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* ── UTILITY ── */
+  .hidden { display: none !important; }
+  .loading { text-align: center; padding: 3rem; color: var(--grigio); font-size: 0.9rem; }
+
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .tag-rischio { background: rgba(192,57,43,0.1); color: var(--rosso); }
+  .tag-norma { background: rgba(27,58,107,0.1); color: var(--blu); }
+  .tag-chiave { background: rgba(201,125,46,0.1); color: var(--ambra); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header { padding: 0.6rem 1rem; }
+    .phase-name { display: none; }
+    main { padding: 1rem; }
+    .kangaro-btn span.label { display: none; }
+    .timer-controls { display: none; }
+  }
+
+  /* Notifica di connessione */
+  .conn-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(45,106,79,0.2);
+    color: #86efac;
+  }
+  .conn-status.offline { background: rgba(192,57,43,0.2); color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<!-- ══ SCHERMATA JOIN ══ -->
+<div id="screen-join">
+  <div class="join-logo">Laboratorio · AI & PA · 2026</div>
+  <h1 class="join-title">Supervisione Umana e AI Generativa</h1>
+  <p class="join-subtitle">Il Caso Chatbot ISEE</p>
+
+  <div class="join-card">
+    <h2>Seleziona il tuo ruolo</h2>
+
+    <button class="role-btn" onclick="selectRole('operatore')" id="btn-operatore">
+      <span class="role-name">Operatore Sportello Studenti</span>
+      <span class="role-desc">Gestione del conflitto e front-office</span>
+    </button>
+
+    <button class="role-btn" onclick="selectRole('it')" id="btn-it">
+      <span class="role-name">Responsabile Sistemi Informativi</span>
+      <span class="role-desc">Analisi tecnica e gestione flussi dati</span>
+    </button>
+
+    <button class="role-btn" onclick="selectRole('dg')" id="btn-dg">
+      <span class="role-name">Direttore Generale</span>
+      <span class="role-desc">Responsabilità amministrativa e conformità</span>
+    </button>
+
+    <button class="role-btn" onclick="selectRole('facilitatore')" id="btn-facilitatore">
+      <span class="role-name">Facilitatore <span class="facilitatore-badge">Docente</span></span>
+      <span class="role-desc">Controllo sessione, timer, navigazione fasi</span>
+    </button>
+
+    <button class="join-btn" id="join-btn" disabled onclick="joinSession()">
+      Entra nel laboratorio →
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCHERMATA PRINCIPALE ══ -->
+<div id="screen-main">
+
+  <header>
+    <div class="header-left">
+      <div>
+        <div class="phase-indicator" id="header-phase-num">FASE 1</div>
+        <div class="phase-name" id="header-phase-name">Scenario</div>
+      </div>
+    </div>
+
+    <div class="timer-wrap">
+      <div class="timer-svg-wrap">
+        <svg width="52" height="52" viewBox="0 0 52 52">
+          <circle class="timer-track" cx="26" cy="26" r="22"/>
+          <circle class="timer-fill" id="timer-circle" cx="26" cy="26" r="22"
+            stroke-dasharray="138.23"
+            stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="timer-display">5:00</div>
+      </div>
+      <div class="timer-controls" id="timer-controls-wrap">
+        <button class="timer-ctrl-btn" onclick="timerToggle()">⏸</button>
+        <button class="timer-ctrl-btn" onclick="timerReset()">↺</button>
+      </div>
+      <span class="conn-status" id="conn-status">●</span>
+    </div>
+
+    <button class="kangaro-btn" id="kangaro-btn" onclick="sendKangaro()">
+      🦘 <span class="label">Canguro!</span>
+    </button>
+  </header>
+
+  <!-- Barra fasi -->
+  <div class="phases-bar" id="phases-bar">
+    <div class="phase-tab active" data-phase="0" onclick="isFacilitatore && goToPhase(0)">
+      Scenario <span class="tab-time">5 min</span>
+    </div>
+    <div class="phase-tab" data-phase="1" onclick="isFacilitatore && goToPhase(1)">
+      Personaggi <span class="tab-time">12 min</span>
+    </div>
+    <div class="phase-tab" data-phase="2" onclick="isFacilitatore && goToPhase(2)">
+      Task <span class="tab-time">8 min</span>
+    </div>
+    <div class="phase-tab" data-phase="3" onclick="isFacilitatore && goToPhase(3)">
+      Debriefing <span class="tab-time">5 min</span>
+    </div>
+  </div>
+
+  <main id="main-content">
+    <!-- Contenuto dinamico -->
+  </main>
+</div>
+
+<!-- ══ CANGURO ALERTS (solo facilitatore) ══ -->
+<div class="canguro-alerts" id="canguro-alerts"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ══ CONFIG FIREBASE ══
+const firebaseConfig = {
+  apiKey: "AIzaSyAuvu5RboPErd_R6hiNPqrGmnjXSq0qq7o",
+  authDomain: "laboratorio-ai-pa.firebaseapp.com",
+  databaseURL: "https://laboratorio-ai-pa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "laboratorio-ai-pa",
+  storageBucket: "laboratorio-ai-pa.firebasestorage.app",
+  messagingSenderId: "315840808103",
+  appId: "1:315840808103:web:20bb2845c89f17f7938782"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ══ STATO LOCALE ══
+let myRole = null;
+let isFacilitatore = false;
+let currentPhase = 0;
+let timerInterval = null;
+let timerRunning = false;
+let timerSeconds = 300;
+let timerTotal = 300;
+let myVotes = {}; // { pollId: optionIndex }
+
+window.isFacilitatore = false;
+
+// Durate fasi in secondi
+const PHASE_DURATIONS = [300, 720, 480, 300];
+const PHASE_NAMES = ["Scenario", "Personaggi & Role-Play", "Task Operativo", "Debriefing W3"];
+
+// ══ SELEZIONE RUOLO ══
+window.selectRole = function(role) {
+  myRole = role;
+  isFacilitatore = (role === 'facilitatore');
+  window.isFacilitatore = isFacilitatore;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-' + role).classList.add('selected');
+  document.getElementById('join-btn').disabled = false;
+}
+
+window.joinSession = function() {
+  document.getElementById('screen-join').style.display = 'none';
+  document.getElementById('screen-main').style.display = 'flex';
+  document.getElementById('screen-main').style.flexDirection = 'column';
+
+  // Mostra/nascondi controlli timer per facilitatore
+  if (!isFacilitatore) {
+    document.getElementById('timer-controls-wrap').style.display = 'none';
+  }
+
+  // Sync stato sessione
+  listenToSession();
+  listenToKangaro();
+}
+
+// ══ FIREBASE LISTENERS ══
+function listenToSession() {
+  const sessionRef = ref(db, 'session');
+  onValue(sessionRef, (snap) => {
+    const data = snap.val();
+    document.getElementById('conn-status').className = 'conn-status';
+    document.getElementById('conn-status').textContent = '●';
+
+    if (!data) {
+      if (isFacilitatore) initSession();
+      return;
+    }
+
+    // Aggiorna fase
+    if (data.phase !== undefined && data.phase !== currentPhase) {
+      currentPhase = data.phase;
+      renderPhase(currentPhase);
+    }
+
+    // Aggiorna timer (solo se non facilitatore)
+    if (!isFacilitatore && data.timerEnd) {
+      const remaining = Math.max(0, Math.round((data.timerEnd - Date.now()) / 1000));
+      updateTimerDisplay(remaining, data.timerTotal || 300);
+    }
+  }, (err) => {
+    document.getElementById('conn-status').className = 'conn-status offline';
+    document.getElementById('conn-status').textContent = '●';
+  });
+}
+
+function listenToKangaro() {
+  const kangaroRef = ref(db, 'kangaro');
+  onValue(kangaroRef, (snap) => {
+    if (!isFacilitatore) return;
+    const data = snap.val();
+    if (!data) return;
+
+    const alertsEl = document.getElementById('canguro-alerts');
+    alertsEl.innerHTML = '';
+
+    const items = Object.values(data)
+      .filter(k => k && k.ts && (Date.now() - k.ts < 120000)) // ultimi 2 min
+      .sort((a,b) => b.ts - a.ts)
+      .slice(0, 4);
+
+    items.forEach(k => {
+      const el = document.createElement('div');
+      el.className = 'canguro-alert';
+      el.textContent = `🦘 ${k.role} ha bisogno di aiuto!`;
+      alertsEl.appendChild(el);
+      setTimeout(() => el.remove(), 8000);
+    });
+
+    // Aggiorna contatore nel badge
+    const btn = document.getElementById('kangaro-btn');
+    if (items.length > 0) {
+      btn.innerHTML = `🦘 <span class="label">Canguro!</span> <span class="kanguro-count">${items.length}</span>`;
+    }
+  });
+}
+
+async function initSession() {
+  await set(ref(db, 'session'), {
+    phase: 0,
+    timerEnd: Date.now() + PHASE_DURATIONS[0] * 1000,
+    timerTotal: PHASE_DURATIONS[0],
+    startedAt: serverTimestamp()
+  });
+  renderPhase(0);
+  startLocalTimer(PHASE_DURATIONS[0]);
+}
+
+// ══ NAVIGAZIONE FASI ══
+window.goToPhase = async function(phase) {
+  if (!isFacilitatore) return;
+  currentPhase = phase;
+  const dur = PHASE_DURATIONS[phase];
+
+  await set(ref(db, 'session'), {
+    phase: phase,
+    timerEnd: Date.now() + dur * 1000,
+    timerTotal: dur
+  });
+
+  renderPhase(phase);
+  startLocalTimer(dur);
+}
+
+function renderPhase(phase) {
+  // Aggiorna header
+  document.getElementById('header-phase-num').textContent = `FASE ${phase + 1}`;
+  document.getElementById('header-phase-name').textContent = PHASE_NAMES[phase];
+
+  // Aggiorna tabs
+  document.querySelectorAll('.phase-tab').forEach((t, i) => {
+    t.className = 'phase-tab' + (i === phase ? ' active' : i < phase ? ' done' : '');
+  });
+
+  // Render contenuto
+  const main = document.getElementById('main-content');
+  switch(phase) {
+    case 0: main.innerHTML = renderScenario(); break;
+    case 1: main.innerHTML = renderPersonaggi(); break;
+    case 2: main.innerHTML = renderTask(); break;
+    case 3: main.innerHTML = renderDebriefing(); break;
+  }
+
+  // Avvia timer locale se facilitatore
+  if (isFacilitatore) {
+    startLocalTimer(PHASE_DURATIONS[phase]);
+  }
+
+  // Attach poll listeners
+  attachPollListeners();
+}
+
+// ══ TIMER ══
+function startLocalTimer(seconds) {
+  clearInterval(timerInterval);
+  timerSeconds = seconds;
+  timerTotal = seconds;
+  timerRunning = true;
+
+  timerInterval = setInterval(() => {
+    if (!timerRunning) return;
+    timerSeconds = Math.max(0, timerSeconds - 1);
+    updateTimerDisplay(timerSeconds, timerTotal);
+    if (timerSeconds === 0) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+    }
+  }, 1000);
+
+  updateTimerDisplay(seconds, seconds);
+}
+
+function updateTimerDisplay(seconds, total) {
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  document.getElementById('timer-display').textContent =
+    `${min}:${sec.toString().padStart(2,'0')}`;
+
+  const circ = 2 * Math.PI * 22; // r=22
+  const offset = circ * (1 - seconds / total);
+  const el = document.getElementById('timer-circle');
+  el.style.strokeDashoffset = offset;
+
+  if (seconds <= 60 && seconds > 0) {
+    el.classList.add('urgent');
+  } else {
+    el.classList.remove('urgent');
+  }
+}
+
+window.timerToggle = function() {
+  timerRunning = !timerRunning;
+  document.querySelector('.timer-ctrl-btn').textContent = timerRunning ? '⏸' : '▶';
+}
+
+window.timerReset = function() {
+  startLocalTimer(PHASE_DURATIONS[currentPhase]);
+}
+
+// ══ CANGURO ══
+window.sendKangaro = async function() {
+  const btn = document.getElementById('kangaro-btn');
+  btn.classList.add('sent');
+  setTimeout(() => btn.classList.remove('sent'), 2000);
+
+  const roleNames = {
+    operatore: 'Operatore Sportello',
+    it: 'Resp. Sistemi Informativi',
+    dg: 'Direttore Generale',
+    facilitatore: 'Facilitatore'
+  };
+
+  await push(ref(db, 'kangaro'), {
+    role: roleNames[myRole] || myRole,
+    ts: Date.now()
+  });
+}
+
+// ══ POLLING ══
+function attachPollListeners() {
+  document.querySelectorAll('.poll-option[data-poll]').forEach(el => {
+    el.addEventListener('click', () => {
+      const pollId = el.dataset.poll;
+      const optIdx = parseInt(el.dataset.opt);
+      if (myVotes[pollId] !== undefined) return;
+      castVote(pollId, optIdx);
+    });
+  });
+}
+
+async function castVote(pollId, optIdx) {
+  myVotes[pollId] = optIdx;
+
+  // Aggiorna contatore su Firebase
+  const voteRef = ref(db, `polls/${pollId}/votes/${optIdx}`);
+  const snap = await get(voteRef);
+  await set(voteRef, (snap.val() || 0) + 1);
+
+  // Marca come votato visivamente
+  document.querySelectorAll(`[data-poll="${pollId}"]`).forEach(el => {
+    el.classList.add('voted');
+    if (parseInt(el.dataset.opt) === optIdx) el.classList.add('selected');
+  });
+
+  // Ascolta risultati
+  listenToPoll(pollId);
+}
+
+function listenToPoll(pollId) {
+  const pollRef = ref(db, `polls/${pollId}/votes`);
+  onValue(pollRef, (snap) => {
+    const votes = snap.val() || {};
+    const total = Object.values(votes).reduce((a,b) => a+b, 0);
+
+    document.querySelectorAll(`[data-poll="${pollId}"]`).forEach(el => {
+      const idx = parseInt(el.dataset.opt);
+      const count = votes[idx] || 0;
+      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+
+      const bar = el.querySelector('.poll-bar');
+      const pctEl = el.querySelector('.poll-pct');
+      const countEl = el.querySelector('.poll-count');
+
+      if (bar) bar.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (countEl) countEl.textContent = `${count} vot${count===1?'o':'i'}`;
+    });
+  });
+}
+
+// ══ RENDER FASI ══
+
+function renderScenario() {
+  const facPanel = isFacilitatore ? `
+    <div class="facilitator-panel">
+      <h3>🎛 Pannello Facilitatore</h3>
+      <div class="phase-nav-btns">
+        <button class="nav-btn primary" onclick="goToPhase(1)">→ Fase 2: Personaggi</button>
+        <button class="nav-btn" onclick="timerReset()">↺ Riavvia timer</button>
+      </div>
+    </div>` : '';
+
+  return `
+    ${facPanel}
+    <div class="section-card">
+      <div class="card-eyebrow">Contesto · Ateneo</div>
+      <h2 class="card-title">Il Chatbot ISEE: cosa è successo?</h2>
+      <div class="card-body">
+        Un assistente virtuale basato su IA Generativa, integrato con <strong>Isidata</strong> e la <strong>PDND</strong>, 
+        gestisce le richieste durante le immatricolazioni. Il sistema è classificato a 
+        <span class="tag tag-rischio">rischio limitato</span> ma opera su processi 
+        <span class="tag tag-rischio">ad alto rischio</span> (Allegato III AI Act).
+      </div>
+      <div class="highlight-box">
+        <strong>L'incidente:</strong> Il chatbot ha fornito istruzioni errate a uno studente con 
+        genitori separati conviventi e redditi esteri — rassicurandolo che poteva presentare 
+        documentazione integrativa ISEE oltre il termine perentorio del bando. 
+        Isidata ha invece applicato rigidamente il Regolamento Tasse: fascia contributiva massima.
+      </div>
+    </div>
+
+    <div class="section-card ambra">
+      <div class="card-eyebrow">La Conseguenza</div>
+      <h2 class="card-title">Legittimo affidamento vs. automazione</h2>
+      <div class="card-body">
+        Lo studente contesta l'addebito invocando il <strong>legittimo affidamento</strong> generato 
+        dal canale ufficiale. L'operatore è in stallo: l'automazione ha prodotto un atto amministrativo 
+        potenzialmente invalido per <em>difetto di motivazione</em> e violazione delle garanzie 
+        partecipative.
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="card-eyebrow">Sondaggio rapido · Prima di iniziare</div>
+      <h2 class="card-title" style="margin-bottom:1.25rem">Nella tua PA, quanto ci si fida 
+      "ciecamente" dell'output dell'IA?</h2>
+      <div class="poll-options">
+        ${['Molto — raramente lo mettiamo in discussione',
+           'Abbastanza — solo per casi semplici',
+           'Poco — verifichiamo sempre',
+           'Per nulla — siamo ancora scettici'].map((opt, i) => `
+          <div class="poll-option" data-poll="trust" data-opt="${i}">
+            <div class="poll-bar" style="width:0%"></div>
+            <div class="poll-option-content">
+              <span class="poll-label">${opt}</span>
+              <span>
+                <span class="poll-pct">—</span>
+                <span class="poll-count"></span>
+              </span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-card verde">
+      <div class="card-eyebrow">Riferimenti normativi</div>
+      <div class="card-body" style="display:grid; gap:0.5rem;">
+        <div><span class="tag tag-norma">AI Act Art. 52</span> Obblighi di trasparenza — rischio limitato</div>
+        <div><span class="tag tag-norma">AI Act Allegato III</span> Sistemi ad alto rischio (istruzione, benefici)</div>
+        <div><span class="tag tag-norma">TAR Campania 7003/2022</span> Invalidità per difetto di motivazione algoritmica</div>
+        <div><span class="tag tag-norma">Art. 22 GDPR</span> Decisioni automatizzate</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPersonaggi() {
+  const personas = {
+    operatore: {
+      badge: 'badge-operatore',
+      label: 'Operatore Sportello',
+      role: 'Operatore dello Sportello Studenti',
+      focus: 'Gestione del conflitto · Front-office',
+      vincoli: 'Sei obbligato ad applicare il Regolamento Tasse, ma sai che il canale ufficiale ha indotto l\'utente in errore. Il Bias di Automazione rischia di trasformarsi in contenzioso legale.',
+      motivazione: 'Risolvere la tensione allo sportello. Lo studente è davanti a te, arrabbiato e in difficoltà economica.',
+      prompts: [
+        'Come spieghi allo studente l\'errore del chatbot senza screditare l\'istituzione?',
+        'Hai il potere di sospendere il pagamento in attesa di autotutela?',
+        'Cosa documenti nell\'audit trail di questo caso?',
+        'Quando chiedi l\'escalation al tuo superiore?'
+      ]
+    },
+    it: {
+      badge: 'badge-it',
+      label: 'Resp. IT',
+      role: 'Responsabile dei Sistemi Informativi',
+      focus: 'Analisi tecnica · Gestione flussi dati · Vendor management',
+      vincoli: 'I modelli GPAI hanno debolezze intrinseche su casi non standard. Il fornitore è spesso reticente nel fornire documentazione tecnica sugli aggiornamenti del modello.',
+      motivazione: 'Capire se è possibile un override su Isidata e prevenire che l\'incidente si ripeta.',
+      prompts: [
+        'Quali "trigger" tecnici avresti dovuto configurare per bloccare questo caso (redditi esteri, famiglie atipiche)?',
+        'Come documenti la chain of accountability tra chatbot → Isidata → atto amministrativo?',
+        'Cosa chiedi contrattualmente al fornitore di AI per garantire trasparenza algoritmica?',
+        'È possibile un override manuale su Isidata? Chi lo autorizza?'
+      ]
+    },
+    dg: {
+      badge: 'badge-dg',
+      label: 'Dir. Generale',
+      role: 'Direttore Generale',
+      focus: 'Responsabilità amministrativa · Conformità Legge 132/2025',
+      vincoli: 'Art. 5 L. 241/1990 (Responsabilità del Procedimento) e Art. 22 GDPR. Il rischio è danno erariale e reputazionale.',
+      motivazione: 'Assicurare che la supervisione umana non sia un "timbro formale" — evitare scenari di Human-stupidity-in-the-loop.',
+      prompts: [
+        'Chi è il Responsabile del Procedimento in questo caso? Era identificato prima dell\'incidente?',
+        'Come attiveresti la procedura di autotutela? Quali atti devi produrre?',
+        'Cosa cambia nei contratti con i fornitori di AI dopo questo incidente?',
+        'Come comunichi all\'esterno (studenti, stampa) senza amplificare il danno reputazionale?'
+      ]
+    },
+    facilitatore: {
+      badge: null,
+      label: 'Facilitatore',
+      role: 'Vista completa — tutti i personaggi',
+      focus: 'Orchestrazione della sessione',
+      vincoli: '',
+      motivazione: '',
+      prompts: []
+    }
+  };
+
+  const facPanel = isFacilitatore ? `
+    <div class="facilitator-panel">
+      <h3>🎛 Pannello Facilitatore</h3>
+      <div class="phase-nav-btns">
+        <button class="nav-btn" onclick="goToPhase(0)">← Scenario</button>
+        <button class="nav-btn primary" onclick="goToPhase(2)">→ Fase 3: Task</button>
+      </div>
+    </div>` : '';
+
+  if (isFacilitatore) {
+    // Facilitatore vede tutti i personaggi
+    return facPanel + Object.entries(personas)
+      .filter(([k]) => k !== 'facilitatore')
+      .map(([key, p]) => renderPersonaCard(p)).join('');
+  }
+
+  const p = personas[myRole] || personas['operatore'];
+  return facPanel + renderPersonaCard(p);
+}
+
+function renderPersonaCard(p) {
+  return `
+    <div class="persona-card" style="margin-bottom:1.25rem">
+      ${p.badge ? `<span class="persona-badge ${p.badge}">${p.label}</span>` : ''}
+      <div class="persona-role">${p.role}</div>
+      <div class="persona-focus">${p.focus}</div>
+
+      ${p.vincoli ? `
+      <div class="persona-section">
+        <h4>I tuoi vincoli</h4>
+        <p>${p.vincoli}</p>
+      </div>` : ''}
+
+      ${p.motivazione ? `
+      <div class="persona-section">
+        <h4>La tua motivazione</h4>
+        <p>${p.motivazione}</p>
+      </div>` : ''}
+
+      ${p.prompts.length ? `
+      <div class="persona-section">
+        <h4>Domande guida per il role-play</h4>
+        <ul class="prompt-list">
+          ${p.prompts.map(q => `<li>${q}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function renderTask() {
+  const facPanel = isFacilitatore ? `
+    <div class="facilitator-panel">
+      <h3>🎛 Pannello Facilitatore</h3>
+      <div class="phase-nav-btns">
+        <button class="nav-btn" onclick="goToPhase(1)">← Personaggi</button>
+        <button class="nav-btn primary" onclick="goToPhase(3)">→ Fase 4: Debriefing</button>
+      </div>
+    </div>` : '';
+
+  return `
+    ${facPanel}
+    <div class="section-card">
+      <div class="card-eyebrow">Task 3.1 · Troika Consulting</div>
+      <h2 class="card-title">Protocollo di Override Manuale</h2>
+      <div class="card-body">
+        Il vostro tavolo deve definire la procedura d'emergenza per annullare la decisione 
+        di Isidata/IA. Il protocollo deve prevedere un <strong>Audit Trail</strong> con:
+      </div>
+      <ul class="prompt-list" style="margin-top:1rem">
+        <li>Identità del Supervisore — identificativo univoco della persona fisica</li>
+        <li>Timestamp — data e ora esatta dell'intervento</li>
+        <li>Contesto Input/Output — dati originali e raccomandazione errata dell'IA</li>
+        <li>Motivazione dell'Override — giustificazione amministrativa scritta</li>
+      </ul>
+    </div>
+
+    <div class="section-card ambra">
+      <div class="card-eyebrow">Sondaggio · Task 3.1</div>
+      <h2 class="card-title" style="margin-bottom:1.25rem">
+        Chi dovrebbe avere il potere di override sulla decisione algoritmica?
+      </h2>
+      <div class="poll-options">
+        ${['Solo il Direttore Generale',
+           'Il Responsabile del Procedimento (chiunque esso sia)',
+           'Un comitato collegiale IT + Segreteria',
+           'Qualsiasi operatore con motivazione scritta'].map((opt, i) => `
+          <div class="poll-option" data-poll="override" data-opt="${i}">
+            <div class="poll-bar" style="width:0%"></div>
+            <div class="poll-option-content">
+              <span class="poll-label">${opt}</span>
+              <span>
+                <span class="poll-pct">—</span>
+                <span class="poll-count"></span>
+              </span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-card verde">
+      <div class="card-eyebrow">Task 3.2 · WINFY</div>
+      <h2 class="card-title">Control Gates — Quando il chatbot si ferma</h2>
+      <div class="card-body">
+        Definite i <strong>trigger</strong> che impongono il passaggio a un operatore umano 
+        (Human-in-the-loop). Ogni risposta tra uffici può essere solo una di quattro:
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(2,1fr); gap:0.75rem; margin-top:1rem;">
+        ${[['✅ Sì','Confermo e agisco'],['❌ No','Nego formalmente'],
+           ['🔄 Ci proverò','Prendo in carico'],['🦘 Canguro','Rimando: mancano dati']].map(([k,v]) => `
+          <div style="background:var(--avorio);border-radius:8px;padding:0.75rem;border:1px solid var(--grigio-chiaro)">
+            <div style="font-weight:700;font-size:0.9rem">${k}</div>
+            <div style="font-size:0.75rem;color:var(--grigio);margin-top:0.2rem">${v}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="card-eyebrow">Sondaggio · Task 3.2</div>
+      <h2 class="card-title" style="margin-bottom:1.25rem">
+        Quale trigger è più critico per bloccare l'automazione?
+      </h2>
+      <div class="poll-options">
+        ${['Redditi o documenti provenienti dall\'estero',
+           'Situazioni familiari non standard (separati, conviventi)',
+           'Scadenze perentorie di bando in scadenza',
+           'Richiesta esplicita di un operatore umano da parte dell\'utente'].map((opt, i) => `
+          <div class="poll-option" data-poll="trigger" data-opt="${i}">
+            <div class="poll-bar" style="width:0%"></div>
+            <div class="poll-option-content">
+              <span class="poll-label">${opt}</span>
+              <span>
+                <span class="poll-pct">—</span>
+                <span class="poll-count"></span>
+              </span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderDebriefing() {
+  const facPanel = isFacilitatore ? `
+    <div class="facilitator-panel">
+      <h3>🎛 Pannello Facilitatore</h3>
+      <div class="phase-nav-btns">
+        <button class="nav-btn" onclick="goToPhase(2)">← Task</button>
+        <button class="nav-btn" onclick="location.reload()">↺ Nuova sessione</button>
+      </div>
+    </div>` : '';
+
+  const w3 = [
+    {
+      label: 'WHAT?', labelClass: 'w3-what', emoji: '🔍',
+      title: 'Cosa è accaduto?',
+      questions: [
+        'In quale punto la catena umano-macchina ha smesso di funzionare?',
+        'Dove nella "Scala di Inferenza" l\'operatore ha dato per scontata la correttezza dell\'algoritmo?'
+      ],
+      pollId: 'w3what',
+      pollQ: 'La causa principale dell\'incidente è stata:',
+      opts: ['Allucinazione del modello AI (errore tecnico)',
+             'Mancanza di supervisione umana (errore organizzativo)',
+             'Contratto con il fornitore inadeguato',
+             'Assenza di procedure di escalation chiare']
+    },
+    {
+      label: 'SO WHAT?', labelClass: 'w3-sowhat', emoji: '⚡',
+      title: 'Perché è importante?',
+      questions: [
+        'Perché l\'assenza di supervisione reale rende l\'atto amministrativo nullo (TAR Campania 7003/2022)?',
+        'Come l\'Automation Bias ha eroso la capacità critica del personale?'
+      ],
+      pollId: 'w3sowhat',
+      pollQ: 'Il rischio maggiore per la vostra PA è:',
+      opts: ['Contenzioso legale con lo studente',
+             'Danno reputazionale dell\'istituzione',
+             'Sanzioni per violazione AI Act/GDPR',
+             'Perdita di fiducia del personale nei sistemi digitali']
+    },
+    {
+      label: 'NOW WHAT?', labelClass: 'w3-nowwhat', emoji: '🚀',
+      title: 'Cosa facciamo adesso?',
+      questions: [
+        'Quali misure HITL/HOTL implementerete nel prossimo ciclo di immatricolazioni?',
+        'Come modificherete i contratti con i fornitori per garantire trasparenza algoritmica?'
+      ],
+      pollId: 'w3nowwhat',
+      pollQ: 'La prima azione concreta da adottare entro 30 giorni:',
+      opts: ['Mappare tutti i processi ad alto rischio con AI coinvolta',
+             'Formare il personale sull\'Automation Bias',
+             'Rinegoziare i contratti con i fornitori di AI',
+             'Istituire un Comitato di supervisione algoritmica']
+    }
+  ];
+
+  return `
+    ${facPanel}
+    ${w3.map(s => `
+      <div class="w3-card" style="margin-bottom:1.25rem">
+        <div class="w3-label ${s.labelClass}">${s.emoji} ${s.label} — ${s.title}</div>
+        <ul class="prompt-list" style="margin: 0.75rem 0 1.25rem">
+          ${s.questions.map(q => `<li>${q}</li>`).join('')}
+        </ul>
+        <div style="font-size:0.85rem; font-weight:600; color:var(--blu); margin-bottom:0.75rem">${s.pollQ}</div>
+        <div class="poll-options">
+          ${s.opts.map((opt, i) => `
+            <div class="poll-option" data-poll="${s.pollId}" data-opt="${i}">
+              <div class="poll-bar" style="width:0%"></div>
+              <div class="poll-option-content">
+                <span class="poll-label">${opt}</span>
+                <span>
+                  <span class="poll-pct">—</span>
+                  <span class="poll-count"></span>
+                </span>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}
+  `;
+}
+
+// ══ INIT ══
+// Renderizza schermata iniziale
+renderPhase(0); // pre-render per quando entrano
+</script>
+</body>
+</html>
