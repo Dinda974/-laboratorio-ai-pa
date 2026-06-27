@@ -2001,14 +2001,10 @@ footer{text-align:center;padding:1.25rem;font-size:.72rem;color:var(--grigio);bo
 // Coda chiamate onclick prima che Firebase sia pronto
 window._fns = {};
 window._queue = [];
-window.showRoleScreen = function() {
-  document.getElementById('screen-landing').style.display='none';
-  document.getElementById('screen-join').style.display='flex';
-  document.getElementById('screen-join').style.flexDirection='column';
-};
-['selectRole','joinSession','goToPhase','timerToggle','timerReset',
- 'sendKangaro','clearKangaro','castVote','submitVotes','saveAnswer',
- 'resetSessione','downloadReport'].forEach(fn => {
+['showRoleScreen', 'selectRole', 'joinSession', 'goToPhase', 'timerToggle',
+ 'timerReset', 'sendKangaro', 'clearKangaro', 'castVote', 'submitVotes',
+ 'saveAnswer', 'resetSessione', 'downloadReport']
+.forEach(fn => {
   window[fn] = function(...args) {
     if (window._fns[fn]) return window._fns[fn](...args);
     window._queue.push([fn, args]);
@@ -2104,6 +2100,13 @@ function startApp(role) {
 }
 
 // ── JOIN ──
+window.showRoleScreen = function() {
+  document.getElementById('screen-landing').style.display='none';
+  document.getElementById('screen-join').style.display='flex';
+  document.getElementById('screen-join').style.flexDirection='column';
+  document.getElementById('screen-join').style.alignItems = 'center';
+  document.getElementById('screen-join').style.justifyContent = 'center';
+};
 window.selectRole = function(role) {
   myRole = role;
   document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
@@ -2880,7 +2883,8 @@ if (isFacilitatore) { renderPhase(0); listenToPresenze(); listenToAnswers(); }
 
 // Registra tutte le funzioni nel bridge
 window._ready({
-  selectRole, joinSession, goToPhase, timerToggle, timerReset,
+  showRoleScreen, selectRole, joinSession, goToPhase,
+  timerToggle, timerReset,
   sendKangaro, clearKangaro, castVote, submitVotes, saveAnswer,
   resetSessione, downloadReport
 });
