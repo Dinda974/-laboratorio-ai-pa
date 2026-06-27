@@ -2087,6 +2087,7 @@ if (params.get('facilitatore') === 'AA2026') {
 }
 
 function startApp(role) {
+  document.getElementById('screen-landing').style.display = 'none';
   document.getElementById('screen-join').style.display = 'none';
   document.getElementById('screen-main').style.display = 'flex';
   document.getElementById('screen-main').style.flexDirection = 'column';
@@ -2297,6 +2298,7 @@ async function initSession() {
   });
   renderPhase(0);
   syncTimer(timerEnd, dur, false, null);
+  if (isFacilitatore) syncTimer(timerEnd, dur, false, null);
 }
 
 const PHASE_DUR = [300,720,480,300];
