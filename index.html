@@ -190,7 +190,6 @@ footer{text-align:center;padding:1.25rem;font-size:.72rem;color:var(--grigio);bo
 
 <!-- JOIN -->
 <div id="screen-join">
-  <img src="https://raw.githubusercontent.com/Dinda974/CNC-asset/main/logoAA.png" alt="Adriana Augenti" style="height:72px;margin-bottom:1rem;filter:brightness(0) invert(1);opacity:.9" onerror="this.style.display='none'"/>
   <div class="join-logo">Laboratorio · AI &amp; PA · 2026</div>
   <h1 class="join-title">Supervisione Umana e AI Generativa</h1>
   <p class="join-sub">Il Caso Chatbot ISEE</p>
@@ -2177,9 +2176,9 @@ function getPollOpts(pollId) {
   const opts = {
     trust: ['Molto — raramente lo mettiamo in discussione','Abbastanza — solo per casi semplici','Poco — verifichiamo sempre','Per nulla — siamo ancora scettici'],
     override: ['Solo il Direttore Generale','Il Responsabile del Procedimento','Un comitato collegiale IT + Segreteria','Qualsiasi operatore con motivazione scritta'],
-    trigger: ['Redditi o documenti provenienti dall'estero','Situazioni familiari non standard','Scadenza perentoria entro 48 ore','Studente minorenne o con disabilità','Richiesta esplicita di operatore umano','Prima richiesta di un utente nuovo'],
+    trigger: ["Redditi o documenti provenienti dall'estero","Situazioni familiari non standard","Scadenza perentoria entro 48 ore","Studente minorenne o con disabilità","Richiesta esplicita di operatore umano","Prima richiesta di un utente nuovo"],
     w3what: ['Allucinazione del modello AI','Mancanza di supervisione umana reale','Contratto con il fornitore inadeguato','Assenza di procedure di escalation chiare'],
-    w3sowhat: ['Invalidità dell'atto e contenzioso legale','Violazione diritti utente (GDPR Art. 22)','Danno reputazionale','Perdita di fiducia del personale'],
+    w3sowhat: ["Invalidità dell'atto e contenzioso legale","Violazione diritti utente (GDPR Art. 22)","Danno reputazionale","Perdita di fiducia del personale"],
     w3nowwhat: ['Mappare processi ad alto rischio con AI','Definire per iscritto il Responsabile del Procedimento','Formare il personale sul rischio AI','Rinegoziare i contratti con i fornitori']
   };
   return opts[pollId] || [];
@@ -2844,6 +2843,13 @@ function renderDebriefing() {
 // ── INIT ──
 if (!isFacilitatore && !isProiettore) renderPhase(0);
 if (isFacilitatore) { renderPhase(0); listenToPresenze(); listenToAnswers(); }
+
+// Registra funzioni nel bridge per gli onclick HTML
+['selectRole','joinSession','goToPhase','timerToggle','timerReset',
+ 'sendKangaro','clearKangaro','castVote','submitVotes','saveAnswer',
+ 'resetSessione','downloadReport'].forEach(fn => {
+  if (window[fn]) window._bridge[fn] = window[fn];
+});
 </script>
 </body>
 </html>
