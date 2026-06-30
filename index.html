@@ -1977,8 +1977,8 @@ footer{text-align:center;padding:1.25rem;font-size:.72rem;color:var(--grigio);bo
 
   <div class="phases-bar">
     <div class="ptab active" data-phase="0">Scenario <span class="tt">5 min</span></div>
-    <div class="ptab" data-phase="1">Personaggi <span class="tt">12 min</span></div>
-    <div class="ptab" data-phase="2">Task <span class="tt">8 min</span></div>
+    <div class="ptab" data-phase="1">Personaggi <span class="tt">7 min</span></div>
+    <div class="ptab" data-phase="2">Task <span class="tt">13 min</span></div>
     <div class="ptab" data-phase="3">Debriefing <span class="tt">5 min</span></div>
   </div>
 
@@ -2044,11 +2044,11 @@ let pollsRevealed = {};
 // 0=nessuna gradazione, 1=verde, 0.5=ambra, 0=rosso
 const POLL_CORRECT = {
   trust: null, // diagnostico, no gradazione
-  override: [1, 0.5, 0.5, 0],   // RdP=verde, collegiale=ambra, altri=rosso
-  trigger: [1, 1, 0.75, 0.75, 0.25, 0], // verde/verde/ambra/ambra/rosso/rosso
-  w3what:  [0, 1, 0, 0],   // mancanza supervisione=verde
-  w3sowhat:[1, 1, 0.5, 0], // invalidità atto e GDPR=verde
-  w3nowwhat:[1, 1, 0.5, 0] // mappatura e RdP=verde
+  override: [1, 0.5, 0.25, 0, 0],
+  trigger: [1, 1, 1, 0.75, 0.25, 0, 0.25],
+  w3what:  [1, 1, 1, 0, 0],
+  w3sowhat:[1, 1, 1, 0.25, 0],
+  w3nowwhat:[1, 1, 1, 0.25, 0]
 };
 
 function getCorrectColor(pollId, optIdx, pct) {
@@ -2209,11 +2209,25 @@ function showProjectorResults(phase) {
 function getPollOpts(pollId) {
   const opts = {
     trust: ['Molto — raramente lo mettiamo in discussione','Abbastanza — solo per casi semplici','Poco — verifichiamo sempre','Per nulla — siamo ancora scettici'],
-    override: ['Solo il Direttore Generale','Il Responsabile del Procedimento','Un comitato collegiale IT + Segreteria','Qualsiasi operatore con motivazione scritta'],
-    trigger: ["Redditi o documenti provenienti dall'estero","Situazioni familiari non standard","Scadenza perentoria entro 48 ore","Studente minorenne o con disabilità","Richiesta esplicita di operatore umano","Prima richiesta di un utente nuovo"],
-    w3what: ['Allucinazione del modello AI','Mancanza di supervisione umana reale','Contratto con il fornitore inadeguato','Assenza di procedure di escalation chiare'],
-    w3sowhat: ["Invalidità dell'atto e contenzioso legale","Violazione diritti utente (GDPR Art. 22)","Danno reputazionale","Perdita di fiducia del personale"],
-    w3nowwhat: ['Mappare processi ad alto rischio con AI','Definire per iscritto il Responsabile del Procedimento','Formare il personale sul rischio AI','Rinegoziare i contratti con i fornitori']
+    override: [
+      'Il Responsabile del Procedimento, con supporto tecnico e motivazione tracciata',
+      'Il Direttore Generale, anche senza istruttoria, per evitare il contenzioso',
+      'Il Responsabile IT, perché può modificare il sistema',
+      'L’operatore di sportello, se lo studente insiste e sembra in buona fede',
+      'Nessuno: se il sistema ha applicato la regola, l’esito resta definitivo'
+    ],
+    trigger: [
+      'La risposta riguarda una scadenza perentoria, un beneficio, una esclusione o una fascia contributiva',
+      'Lo studente segnala una situazione familiare, economica o documentale non standard',
+      'Lo studente chiede espressamente di parlare con una persona',
+      'La risposta richiede interpretazione di norme, bando o regolamento',
+      'La domanda è semplice e già presente nelle FAQ pubbliche',
+      'Il chatbot è molto sicuro nella risposta',
+      'Lo studente è alla prima richiesta e non ha ancora allegato documenti'
+    ],
+    w3what: ['Il chatbot ha prodotto una risposta plausibile ma non verificata','L’operatore umano ha ratificato l’esito senza riesame reale','Il sistema automatico ha generato un effetto amministrativo senza punto di arresto','Lo studente ha capito male: il problema principale è suo','Il sistema ha funzionato: se la scadenza è scaduta non c’è nulla da fare'],
+    w3sowhat: ["Perché l’ente rischia un esito illegittimo o contestabile per carenza di controllo umano","Perché si crea affidamento nello studente attraverso un canale ufficiale","Perché l’automation bias può trasformare un errore tecnico in decisione amministrativa","Perché il problema è solo comunicativo: basta rispondere meglio la prossima volta","Perché l’errore del chatbot non riguarda l’ente, ma il fornitore"],
+    w3nowwhat: ["Definiamo trigger di escalation umana per scadenze, benefici, esclusioni e casi non standard","Prevediamo un protocollo di override con log, motivazione e responsabile identificato","Aggiorniamo istruzioni, policy e formazione degli operatori","Disattiviamo ogni chatbot dell’ente, anche per informazioni generali","Lasciamo il chatbot attivo ma aggiungiamo un disclaimer: “le risposte potrebbero essere errate”"]
   };
   return opts[pollId] || [];
 }
@@ -2296,7 +2310,7 @@ async function initSession() {
   // Il timer verrà avviato dal listener onValue quando i dati saranno pronti
 }
 
-const PHASE_DUR = [300,720,480,300];
+const PHASE_DUR = [300,420,780,300];
 const PHASE_NAMES = ["Scenario","Personaggi & Role-Play","Task Operativo","Debriefing W3"];
 
 window.goToPhase = async function(phase) {
@@ -2343,8 +2357,8 @@ window.timerReset = async function() {
 
 // ── POLL ──
 window.castVote = async function(pollId, optIdx) {
-  if (myVotes[pollId] !== undefined || isProiettore) return;
-
+  if (isProiettore) return;
+  
   // Multi-select: toggle
   if (!myVotes[pollId]) myVotes[pollId] = {};
   if (myVotes[pollId][optIdx]) {
@@ -2807,7 +2821,7 @@ function renderTask() {
     <div class="card ambra">
       <div class="eyebrow">Sondaggio · Task 3.1</div>
       <h2 class="ctitle" style="margin-bottom:1rem">Chi dovrebbe avere il potere di correggere la decisione del sistema automatico?</h2>
-      ${mkPoll('override','',['Solo il Direttore Generale','Il Responsabile del Procedimento','Un gruppo di lavoro IT e Segreteria','Qualsiasi operatore con motivazione scritta'])}
+      ${mkPoll('override','', getPollOpts('override'))}
     </div>
     <div class="card verde">
       <div class="eyebrow">Task 3.2 · Lavoro di gruppo</div>
@@ -2825,7 +2839,7 @@ function renderTask() {
     <div class="card">
       <div class="eyebrow">Sondaggio · Task 3.2</div>
       <h2 class="ctitle" style="margin-bottom:1rem">Quale segnale di allerta è più critico?</h2>
-      ${mkPoll('trigger','',["Redditi o documenti provenienti dall'estero","Situazioni familiari non standard","Scadenza perentoria entro 48 ore","Studente minorenne o con disabilità","Richiesta esplicita di operatore umano","Prima richiesta di un utente nuovo al sistema"])}
+      ${mkPoll('trigger','', getPollOpts('trigger'))}
     </div>`;
 
   return facPanel + task1 + task2;
@@ -2846,20 +2860,17 @@ function renderDebriefing() {
     {
       label:'🔍 WHAT', labelClass:'color:var(--blu)', title:'Cosa è accaduto?',
       questions:["In quale punto della catena umano-macchina è venuto meno il controllo?","Chi ha dato per scontata la correttezza del sistema, e in base a cosa?"],
-      pollId:'w3what', pollQ:"La causa principale dell'incidente è stata:",
-      opts:['Errore tecnico del modello AI (allucinazione)','Mancanza di supervisione umana reale','Contratto con il fornitore inadeguato','Assenza di procedure di escalation chiare']
+      pollId:'w3what', pollQ:"La causa principale dell'incidente è stata:"
     },
     {
       label:'⚡ SO WHAT', labelClass:'color:var(--ambra)', title:'Perché è importante?',
       questions:["Perché un atto amministrativo prodotto senza controllo umano reale può essere nullo?","Come la tendenza a fidarsi dell'AI ha ridotto la capacità critica del personale?"],
-      pollId:'w3sowhat', pollQ:'Il rischio maggiore per la vostra PA è:',
-      opts:["Invalidità dell'atto e contenzioso legale","Violazione dei diritti dell'utente (GDPR Art. 22)","Danno reputazionale","Perdita di fiducia del personale nei sistemi digitali"]
+      pollId:'w3sowhat', pollQ:'Il rischio maggiore per la vostra PA è:'
     },
     {
       label:'🚀 NOW WHAT', labelClass:'color:var(--verde)', title:'Cosa facciamo adesso?',
       questions:["Quali misure di supervisione umana introducete nel prossimo ciclo?","Come cambiano i contratti con i fornitori di AI?"],
-      pollId:'w3nowwhat', pollQ:'La prima azione concreta da adottare entro 30 giorni:',
-      opts:["Mappare tutti i processi ad alto rischio con AI","Definire per iscritto il Responsabile del Procedimento per ogni processo automatizzato","Formare il personale sul rischio di fidarsi ciecamente dell'AI","Rinegoziare i contratti con i fornitori di AI"]
+      pollId:'w3nowwhat', pollQ:'La prima azione concreta da adottare entro 30 giorni:'
     }
   ];
 
@@ -2870,7 +2881,7 @@ function renderDebriefing() {
         ${s.questions.map(q=>`<li>${q}</li>`).join('')}
       </ul>
       <div style="font-size:.85rem;font-weight:600;color:var(--blu);margin-bottom:.75rem">${s.pollQ}</div>
-      ${mkPoll(s.pollId,'',s.opts)}
+      ${mkPoll(s.pollId,'', getPollOpts(s.pollId))}
     </div>`).join('');
 }
 
