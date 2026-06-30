@@ -2011,9 +2011,9 @@ window._ready = function(fns) {
   window._queue = [];
 };
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.es.min.js";
 import { getDatabase, ref, set, get, onValue, push, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
@@ -2517,7 +2517,7 @@ window.resetSessione = async function() {
 window.downloadReport = async function() {
     const snap = await get(ref(db, '/'));
     const all = snap.val() || {};
-    const doc = new jsPDF();
+    const doc = new window.jspdf.jsPDF();
 
     const blu = '#1B3A6B', ambra = '#C97D2E', verde = '#2D6A4F', rosso = '#C0392B', grigio = '#6B7280';
     let y = 20;
