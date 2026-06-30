@@ -2013,6 +2013,7 @@ window._ready = function(fns) {
 </script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.es.min.js";
 import { getDatabase, ref, set, get, onValue, push, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
@@ -2514,72 +2515,138 @@ window.resetSessione = async function() {
 
 // ── REPORT ──
 window.downloadReport = async function() {
-  const snap = await get(ref(db, '/'));
-  const all = snap.val()||{};
+    const snap = await get(ref(db, '/'));
+    const all = snap.val() || {};
+    const doc = new jsPDF();
 
-  const pollLabels = {
-    trust: "Fase 1 — Fiducia nell'AI nella PA",
-    override: 'Task 3.1 — Chi ha il potere di correzione manuale',
-    trigger: 'Task 3.2 — Segnali di allerta critici',
-    w3what: 'Debriefing — WHAT: Causa principale',
-    w3sowhat: 'Debriefing — SO WHAT: Rischio maggiore',
-    w3nowwhat: 'Debriefing — NOW WHAT: Prima azione'
-  };
+    const blu = '#1B3A6B', ambra = '#C97D2E', verde = '#2D6A4F', rosso = '#C0392B', grigio = '#6B7280';
+    let y = 20;
+    const pageHeight = doc.internal.pageSize.height;
+    const checkY = (increment = 10) => {
+        if (y + increment > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+        }
+    };
 
-  let txt = '═══════════════════════════════════════════\n';
-  txt += 'REPORT LABORATORIO · SUPERVISIONE UMANA E AI\n';
-  txt += 'Il Caso Chatbot ISEE\n';
-  txt += `Generato il ${new Date().toLocaleString('it-IT')}\n`;
-  txt += '© 2026 Adriana Augenti\n';
-  txt += '═══════════════════════════════════════════\n\n';
+    // --- HEADER ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(blu);
+    doc.text('Report Laboratorio · Supervisione Umana e AI', 14, y);
+    y += 8;
+    doc.setFontSize(14);
+    doc.text('Il Caso Chatbot ISEE', 14, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(grigio);
+    doc.text(`Generato il ${new Date().toLocaleString('it-IT')}`, 14, y);
+    y += 5;
+    doc.text('© 2026 Adriana Augenti', 14, y);
+    y += 15;
 
-  txt += '── PRESENZE PER RUOLO ──\n';
-  const p = all.presenze||{};
-  txt += `Studente: ${p.studente||0} · Operatore: ${p.operatore||0} · Resp. IT: ${p.it||0} · Dir. Generale: ${p.dg||0}\n\n`;
+    // --- PRESENZE ---
+    checkY(20);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blu);
+    doc.text('Presenze per Ruolo', 14, y);
+    y += 8;
+    const p = all.presenze || {};
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0);
+    const presenzeText = `Studente: ${p.studente||0}  ·  Operatore: ${p.operatore||0}  ·  Resp. IT: ${p.it||0}  ·  Dir. Generale: ${p.dg||0}`;
+    doc.text(presenzeText, 14, y);
+    y += 15;
 
-  txt += '── SONDAGGI ──\n\n';
-  const polls = all.polls||{};
-  Object.entries(pollLabels).forEach(([pid, label]) => {
-    txt += `${label}\n`;
-    const votes = (polls[pid]||{}).votes||{};
-    const total = Object.values(votes).reduce((a,b)=>a+b,0);
-    const opts = getPollOpts(pid);
-    opts.forEach((opt,i) => {
-      const count = votes[i]||0;
-      const pct = total>0 ? Math.round((count/total)*100) : 0;
-      const correct = POLL_CORRECT[pid];
-      let tag = '';
-      if (correct) {
-        const s = correct[i]??0;
-        tag = s>=1 ? ' [✓ CORRETTO]' : s>=0.5 ? ' [~ PARZIALE]' : ' [✗]';
-      }
-      txt += `  ${pct}% (${count} voti) — ${opt}${tag}\n`;
+    // --- SONDAGGI ---
+    const pollLabels = { trust: "Fase 1 — Fiducia nell'AI", override: 'Task 3.1 — Potere di correzione', trigger: 'Task 3.2 — Segnali di allerta', w3what: 'Debriefing — WHAT', w3sowhat: 'Debriefing — SO WHAT', w3nowwhat: 'Debriefing — NOW WHAT' };
+    const polls = all.polls || {};
+    checkY(20);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blu);
+    doc.text('Risultati Sondaggi', 14, y);
+    y += 8;
+
+    Object.entries(pollLabels).forEach(([pid, label]) => {
+        checkY(15);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(ambra);
+        doc.text(label, 14, y);
+        y += 6;
+
+        const votes = (polls[pid] || {}).votes || {};
+        const total = Object.values(votes).reduce((a, b) => a + b, 0);
+        const opts = getPollOpts(pid);
+
+        opts.forEach((opt, i) => {
+            const count = votes[i] || 0;
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            const correct = POLL_CORRECT[pid];
+            let scoreTag = '';
+            let scoreColor = grigio;
+            if (correct) {
+                const s = correct[i] ?? 0;
+                if (s >= 1) { scoreTag = '✓'; scoreColor = verde; }
+                else if (s >= 0.5) { scoreTag = '~'; scoreColor = ambra; }
+                else { scoreTag = '✗'; scoreColor = rosso; }
+            }
+            
+            checkY(12);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(scoreColor);
+            doc.text(`${scoreTag} ${pct}%`, 16, y);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0);
+            const splitText = doc.splitTextToSize(opt, 150);
+            doc.text(splitText, 30, y);
+            y += (splitText.length * 4) + 4;
+        });
+        y += 5;
     });
-    txt += '\n';
-  });
 
-  txt += '── RISPOSTE DEI GRUPPI (anonimizzate per ruolo) ──\n\n';
-  const answers = all.answers||{};
-  const qLabels = {
-    override_q1: 'Protocollo di correzione: chi interviene e come?',
-    override_q2: "Cosa documenti nell'azione correttiva?",
-    trigger_q1: 'Segnali di allerta che identificate nel vostro contesto',
-    studente_q1: "Cosa ti aspetti che l'ente faccia per te?",
-  };
-  Object.entries(answers).forEach(([qid, roles]) => {
-    txt += `${qLabels[qid]||qid}\n`;
-    Object.entries(roles).forEach(([role, ans]) => {
-      const roleNames = {studente:'Studente',operatore:'Operatore',it:'Resp. IT',dg:'Dir. Generale'};
-      txt += `  [${roleNames[role]||role}]: ${ans.text}\n`;
+    // --- RISPOSTE TESTUALI ---
+    const answers = all.answers || {};
+    const qLabels = { override_q1: 'Protocollo di correzione', trigger_q1: 'Segnali di allerta identificati', studente_q1: "Aspettative dello studente" };
+    checkY(20);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blu);
+    doc.text('Risposte dei Gruppi', 14, y);
+    y += 8;
+
+    Object.entries(answers).forEach(([qid, roles]) => {
+        checkY(15);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(ambra);
+        doc.text(qLabels[qid] || qid, 14, y);
+        y += 6;
+        
+        Object.entries(roles).forEach(([role, ans]) => {
+            const roleNames = { studente: 'Studente', operatore: 'Operatore', it: 'Resp. IT', dg: 'Dir. Generale' };
+            checkY(12);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(grigio);
+            doc.text(`[${roleNames[role] || role}]`, 16, y);
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0);
+            const splitText = doc.splitTextToSize(ans.text, 170);
+            doc.text(splitText, 16, y + 5);
+            y += (splitText.length * 4) + 8;
+        });
+        y += 5;
     });
-    txt += '\n';
-  });
 
-  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'report-laboratorio-ai.txt'; a.click();
-  URL.revokeObjectURL(url);
+    doc.save('report-laboratorio-ai.pdf');
 };
 
 // ── RENDER ──
