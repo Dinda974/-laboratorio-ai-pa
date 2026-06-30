@@ -112,7 +112,7 @@ main{flex:1;padding:1.25rem;max-width:780px;margin:0 auto;width:100%}
 .popt.locked{cursor:default}
 .pbar{position:absolute;top:0;left:0;bottom:0;border-radius:7px;transition:width .7s ease,background .7s ease;z-index:0;width:0%}
 .poc{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
-.plabel{font-size:.85rem;font-weight:500}
+.plabel{font-size:.85rem;font-weight:500;flex-grow:1;min-width:0}
 .ppct{font-family:"IBM Plex Mono",monospace;font-size:.78rem;font-weight:600;min-width:34px;text-align:right}
 .pcnt{font-size:.68rem;color:var(--grigio)}
 .poll-hidden .pbar{display:none}
@@ -2233,6 +2233,21 @@ function getPollOpts(pollId) {
   return opts[pollId] || [];
 }
 
+function shufflePoll(pollId) {
+  const opts = getPollOpts(pollId);
+  const scores = POLL_CORRECT[pollId];
+  
+  const combined = opts.map((opt, i) => ({
+    opt,
+    score: scores ? scores[i] : null
+  }));
+
+  for (let i = combined.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [combined[i], combined[j]] = [combined[j], combined[i]];
+  }
+  return combined;
+}
 // ── SESSION LISTENER ──
 function listenToSession() {
   onValue(ref(db,'session'), snap => {
@@ -2572,6 +2587,7 @@ window.downloadReport = async function() {
     y += 8;
 
     Object.entries(pollLabels).forEach(([pid, label]) => {
+        const shuffledPoll = shufflePoll(pid);
         checkY(15);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
@@ -2579,20 +2595,18 @@ window.downloadReport = async function() {
         doc.text(label, 14, y);
         y += 6;
 
-        const votes = (polls[pid] || {}).votes || {};
-        const total = Object.values(votes).reduce((a, b) => a + b, 0);
-        const opts = getPollOpts(pid);
+        const originalVotes = (polls[pid] || {}).votes || {};
+        const total = Object.values(originalVotes).reduce((a, b) => a + b, 0);
 
-        opts.forEach((opt, i) => {
-            const count = votes[i] || 0;
+        shuffledPoll.forEach(({ opt, score }, i) => {
+            const originalIndex = getPollOpts(pid).indexOf(opt);
+            const count = originalVotes[originalIndex] || 0;
             const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-            const correct = POLL_CORRECT[pid];
             let scoreTag = '';
             let scoreColor = grigio;
-            if (correct) {
-                const s = correct[i] ?? 0;
-                if (s >= 1) { scoreTag = '✓'; scoreColor = verde; }
-                else if (s >= 0.5) { scoreTag = '~'; scoreColor = ambra; }
+            if (score !== null) {
+                if (score >= 1) { scoreTag = '✓'; scoreColor = verde; }
+                else if (score >= 0.5) { scoreTag = '~'; scoreColor = ambra; }
                 else { scoreTag = '✗'; scoreColor = rosso; }
             }
             
@@ -2685,12 +2699,13 @@ function attachPollHandlers() {
 }
 
 function mkPoll(pollId, question, opts, multiSelect=true) {
+  const shuffledOpts = shufflePoll(pollId);
   const hidden = !pollsRevealed[pollId] && !isFacilitatore;
   return `
     <div class="pq">${question}</div>
     ${multiSelect ? '<p style="font-size:.75rem;color:var(--grigio);margin-bottom:.75rem">Puoi selezionare più risposte</p>' : ''}
     <div class="popts ${hidden?'poll-hidden':''}">
-      ${opts.map((opt,i)=>`
+      ${shuffledOpts.map(({opt},i)=>`
         <div class="popt ${hidden?'':''}" data-poll="${pollId}" data-opt="${i}">
           <div class="pbar" style="width:0%"></div>
           <div class="poc">
@@ -2751,7 +2766,7 @@ function renderScenario() {
     <div class="card">
       <div class="eyebrow">Sondaggio · Prima di iniziare</div>
       <h2 class="ctitle" style="margin-bottom:1rem">Nella tua PA, quanto ci si fida dell'output dell'AI senza verificarlo?</h2>
-      ${mkPoll('trust', '', ['Molto — raramente lo mettiamo in discussione','Abbastanza — solo per casi semplici','Poco — verifichiamo sempre','Per nulla — siamo ancora scettici'], true)}
+      ${mkPoll('trust', '', getPollOpts('trust'), true)}
     </div>
     <div class="card verde">
       <div class="eyebrow">Riferimenti normativi</div>
@@ -2888,7 +2903,7 @@ function renderTask() {
     <div class="card ambra">
       <div class="eyebrow">Sondaggio · Task 3.1</div>
       <h2 class="ctitle" style="margin-bottom:1rem">Chi dovrebbe avere il potere di correggere la decisione del sistema automatico?</h2>
-      ${mkPoll('override','', getPollOpts('override'))}
+      ${mkPoll('override','', getPollOpts('override'), true)}
     </div>
     <div class="card verde">
       <div class="eyebrow">Task 3.2 · Lavoro di gruppo</div>
@@ -2906,7 +2921,7 @@ function renderTask() {
     <div class="card">
       <div class="eyebrow">Sondaggio · Task 3.2</div>
       <h2 class="ctitle" style="margin-bottom:1rem">Quale segnale di allerta è più critico?</h2>
-      ${mkPoll('trigger','', getPollOpts('trigger'))}
+      ${mkPoll('trigger','', getPollOpts('trigger'), true)}
     </div>`;
 
   return facPanel + task1 + task2;
@@ -2920,7 +2935,7 @@ function renderDebriefing() {
         <button class="nbtn" onclick="goToPhase(2)">← Task</button>
         <button class="nbtn danger" onclick="resetSessione()">↺ Nuova sessione</button>
       </div>
-      <button class="report-btn" onclick="downloadReport()">⬇ Scarica report completo (TXT)</button>
+      <button class="report-btn" onclick="downloadReport()">⬇ Scarica report completo</button>
     </div>` : '';
 
   const w3 = [
